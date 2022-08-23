@@ -2,7 +2,7 @@ import { useSelector } from "react-redux";
 import { selectAllUsers } from "../users/usersSlice";
 
 type PostAuthorProps = {
-  userId?: string;
+  userId?: number;
 };
 
 const PostAuthor: React.FC<PostAuthorProps> = ({ userId }) => {

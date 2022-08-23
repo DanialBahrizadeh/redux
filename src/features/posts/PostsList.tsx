@@ -1,28 +1,39 @@
-import { useSelector } from "react-redux";
-import { selectAllPosts } from "./postsSlice";
-import PostAuthor from "./PostAuthor";
-import TimeAgo from "./TimeAgo";
-import ReactionButton from "./ReactionButton";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import type { AppDispatch } from "../../app/store";
+import PostsExcerpt from "./PostsExcerpt";
+import {
+  selectAllPosts,
+  getPostsStatus,
+  getPostsError,
+  fetchPosts,
+} from "./postsSlice";
 
 const PostsList: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const posts = useSelector(selectAllPosts);
+  const postsStatus = useSelector(getPostsStatus);
+  const error = useSelector(getPostsError);
 
-  const renderedPosts = posts.map((post) => (
-    <article key={post.id}>
-      <h3>{post.title}</h3>
-      <p> {post.content.substring(0, 100)} </p>
-      <p className="postCredit">
-        <PostAuthor userId={post?.userId} />
-        <TimeAgo timestamp={post.date} />
-      </p>
-      <ReactionButton post={post} />
-    </article>
-  ));
+  useEffect(() => {
+    if (postsStatus === "idle") {
+      dispatch(fetchPosts());
+    }
+  }, [postsStatus, dispatch]);
+
+  let content: React.ReactNode;
+  if (postsStatus === "loading") {
+    content = <p>"Loading..."</p>;
+  } else if (postsStatus === "succeeded") {
+    content = posts.map((post) => <PostsExcerpt key={post.id} post={post} />);
+  } else if (postsStatus === "failed") {
+    content = <p>{error}</p>;
+  }
 
   return (
     <section>
       <h2>Posts</h2>
-      {renderedPosts}
+      {content}
     </section>
   );
 };

@@ -1,7 +1,8 @@
 import { ChangeEvent, FormEvent, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../app/store";
-import { addPost } from "./postsSlice";
+import { addPost, Status } from "./postsSlice";
+import { addNewPost } from "./postsSlice";
 import { selectAllUsers } from "../users/usersSlice";
 const AddPostForm: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -9,11 +10,11 @@ const AddPostForm: React.FC = () => {
   const defaultPostValue = () => ({
     userId: "",
     title: "",
-    content: "",
+    body: "",
   });
   const [post, setPost] = useState(() => defaultPostValue());
   const users = useSelector(selectAllUsers);
-
+  const [addRequestStatus, setAddRequestStatus] = useState<Status>("idle");
   const onUserIdChange = (event: ChangeEvent<HTMLSelectElement>) =>
     setPost((prevPost) => ({ ...prevPost, userId: event.target.value }));
   const usersptions = users.map((user) => (
@@ -31,14 +32,29 @@ const AddPostForm: React.FC = () => {
     }));
   };
 
-  const validation = post.userId && post.title && post.content;
+  const validation =
+    [post.title, post.title, post.body].every(Boolean) &&
+    addRequestStatus === "idle";
+
+  const onSavePost = () => {
+    if (validation) {
+      try {
+        setAddRequestStatus("loading");
+        const { title, body } = post;
+        const userId = Number(post.userId);
+        dispatch(addNewPost({ title, body, userId })).unwrap();
+
+        setPost(() => defaultPostValue());
+      } catch (error) {
+        console.error("Failed to save the post", error);
+      } finally {
+        setAddRequestStatus("idle");
+      }
+    }
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (validation) {
-      const { userId, title, content } = post;
-      dispatch(addPost(userId, title, content));
-      setPost(defaultPostValue);
-    }
   };
 
   return (
@@ -61,13 +77,13 @@ const AddPostForm: React.FC = () => {
         </select>
         <label htmlFor="postContent">Content:</label>
         <textarea
-          name="content"
+          name="body"
           id="postContent"
           placeholder="Content"
-          value={post.content}
+          value={post.body}
           onChange={handleChange}
         ></textarea>
-        <button type="submit" disabled={!validation}>
+        <button type="submit" disabled={!validation} onClick={onSavePost}>
           Save Post
         </button>
       </form>
